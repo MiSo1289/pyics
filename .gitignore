@@ -6,6 +6,3 @@
 # Build folders
 cmake-build-*
 build
-
-# ImGUI state
-imgui.ini
