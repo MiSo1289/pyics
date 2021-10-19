@@ -82,8 +82,11 @@ PYBIND11_MODULE(pyics, mod)
             "array"_a)
         .def("close", &pyics::Ics::close);
 
-    mod.def("open_ics",
-            [](std::string const& path, std::string const& mode) {
-                return pyics::Ics{ path, mode };
-            });
+    mod.def(
+        "open_ics",
+        [](std::string const& path, std::string const& mode) {
+            return pyics::Ics{ path, mode };
+        },
+        "path"_a,
+        "mode"_a);
 }
