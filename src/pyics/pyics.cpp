@@ -48,9 +48,6 @@ PYBIND11_MODULE(pyics, mod)
         "gzip_compression_level"_a = 6u);
 
     pybind11::class_<pyics::Ics>{ mod, "Ics" }
-        .def(pybind11::init<std::string const&, std::string const&>(),
-             "path"_a,
-             "mode"_a)
         .def("__enter__", [](const pyics::Ics& ics) { return &ics; })
         .def(
             "__exit__",
@@ -84,4 +81,9 @@ PYBIND11_MODULE(pyics, mod)
             { return pyics::write_numpy_array(ics, array); },
             "array"_a)
         .def("close", &pyics::Ics::close);
+
+    mod.def("open_ics",
+            [](std::string const& path, std::string const& mode) {
+                return pyics::Ics{ path, mode };
+            });
 }

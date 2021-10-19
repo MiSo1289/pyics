@@ -1,4 +1,4 @@
-# PyICS
+# PyIcs
 
 Python bindings for [libics](https://svi-opensource.github.io/libics/).
 
