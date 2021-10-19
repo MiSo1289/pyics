@@ -13,7 +13,7 @@ PYBIND11_MODULE(pyics, mod)
     using namespace pybind11::literals;
 
     mod.def(
-        "ics_read",
+        "read_ics",
         [](std::string const& path) -> pybind11::array
         {
             auto ics = pyics::Ics{ path, "r" };
@@ -22,7 +22,7 @@ PYBIND11_MODULE(pyics, mod)
         "path"_a);
 
     mod.def(
-        "ics_write",
+        "write_ics",
         [](std::string const& path,
            pybind11::array const& array,
            std::optional<std::size_t> const gzip_compression_level)
@@ -46,4 +46,42 @@ PYBIND11_MODULE(pyics, mod)
         "path"_a,
         "array"_a,
         "gzip_compression_level"_a = 6u);
+
+    pybind11::class_<pyics::Ics>{ mod, "Ics" }
+        .def(pybind11::init<std::string const&, std::string const&>(),
+             "path"_a,
+             "mode"_a)
+        .def("__enter__", [](const pyics::Ics& ics) { return &ics; })
+        .def(
+            "__exit__",
+            [](pyics::Ics& ics,
+               pybind11::object const&,
+               pybind11::object const&,
+               pybind11::object const&) { ics.close(); },
+            "exc_type"_a,
+            "exc_val"_a,
+            "exc_tb"_a)
+        .def("layout",
+             [](pyics::Ics& ics)
+             {
+                 auto [data_type, dims] = ics.layout();
+
+                 return std::pair{
+                     pyics::to_numpy_type(data_type),
+                     std::move(dims),
+                 };
+             })
+        .def("size_bytes", &pyics::Ics::size_bytes)
+        .def("read",
+             [](pyics::Ics& ics) { return pyics::read_numpy_array(ics); })
+        .def("set_uncompressed", &pyics::Ics::set_uncompressed)
+        .def("set_gzip_compression_level",
+             &pyics::Ics::set_gzip_compression_level,
+             "level"_a)
+        .def(
+            "write",
+            [](pyics::Ics& ics, pybind11::array const& array)
+            { return pyics::write_numpy_array(ics, array); },
+            "array"_a)
+        .def("close", &pyics::Ics::close);
 }
