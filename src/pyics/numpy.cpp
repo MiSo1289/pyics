@@ -1,5 +1,6 @@
 #include <pyics/numpy.hpp>
 
+#include <algorithm>
 #include <complex>
 #include <cstdint>
 
@@ -76,7 +77,8 @@ to_ics_type(pybind11::dtype const& numpy_type) -> ::Ics_DataType
 auto
 read_numpy_array(Ics const& ics) -> pybind11::array
 {
-    auto const [data_type, dimensions] = ics.layout();
+    auto [data_type, dimensions] = ics.layout();
+    std::ranges::reverse(dimensions);
     auto array = pybind11::array{ to_numpy_type(data_type), dimensions };
 
     ics.read(std::span{
@@ -97,8 +99,9 @@ write_numpy_array(Ics& ics, pybind11::array const& array)
         };
     }
 
-    auto const dimensions =
+    auto dimensions =
         std::vector<std::size_t>(array.shape(), array.shape() + array.ndim());
+    std::ranges::reverse(dimensions);
 
     ics.set_layout(to_ics_type(array.dtype()), dimensions);
     ics.write(std::span{
