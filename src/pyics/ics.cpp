@@ -1,7 +1,23 @@
 #include <pyics/ics.hpp>
 
+#include <algorithm>
+#include <stdexcept>
+
 namespace pyics
 {
+
+Layout::Layout(::Ics_DataType const data_type,
+               std::span<std::size_t const> const dimensions)
+    : data_type_{ data_type }
+    , num_dimensions_{ dimensions.size() }
+{
+    if (num_dimensions_ > max_dimensions)
+    {
+        throw std::length_error{ "ICS max dimensions" };
+    }
+
+    std::ranges::copy(dimensions, dimensions_.begin());
+}
 
 Ics::Ics(const std::filesystem::path& path, const std::string& mode)
     : _ics{ ics_open(path, mode) }
@@ -15,17 +31,18 @@ Ics::handle() const noexcept -> ::ICS*
 }
 
 auto
-Ics::layout() const -> std::pair<::Ics_DataType, std::vector<std::size_t>>
+Ics::layout() const -> Layout
 {
     auto data_type = ::Ics_DataType{};
-    auto dimensions = std::vector<std::size_t>(ICS_MAXDIM);
+    auto dimensions = std::array<std::size_t, Layout::max_dimensions>{};
     auto num_dimensions = int{};
     ics_try(::IcsGetLayout(
         handle(), &data_type, &num_dimensions, dimensions.data()));
 
-    dimensions.resize(static_cast<std::size_t>(num_dimensions));
-
-    return { data_type, std::move(dimensions) };
+    return {
+        data_type,
+        std::span{ dimensions }.first(static_cast<std::size_t>(num_dimensions)),
+    };
 }
 
 auto
@@ -41,11 +58,11 @@ Ics::read(std::span<std::byte> const buffer) const
 }
 
 void
-Ics::set_layout(::Ics_DataType const data_type,
-                std::span<std::size_t const> const dimensions)
+Ics::set_layout(Layout const& layout)
 {
+    auto const dimensions = layout.dimensions();
     ics_try(::IcsSetLayout(handle(),
-                           data_type,
+                           layout.data_type(),
                            static_cast<int>(dimensions.size()),
                            dimensions.data()));
 }

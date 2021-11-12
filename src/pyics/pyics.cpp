@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <string>
 
 #include <libics.h>
@@ -61,11 +62,15 @@ PYBIND11_MODULE(pyics, mod)
         .def("layout",
              [](pyics::Ics& ics)
              {
-                 auto [data_type, dims] = ics.layout();
+                 auto const layout = ics.layout();
+                 auto dimensions = std::vector<std::size_t>{};
+                 std::ranges::copy(layout.dimensions(),
+                                   std::back_inserter(dimensions));
+                 std::ranges::reverse(dimensions);
 
                  return std::pair{
-                     pyics::to_numpy_type(data_type),
-                     std::move(dims),
+                     pyics::to_numpy_type(layout.data_type()),
+                     std::move(dimensions),
                  };
              })
         .def("size_bytes", &pyics::Ics::size_bytes)

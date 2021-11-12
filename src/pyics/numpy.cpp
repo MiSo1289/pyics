@@ -77,9 +77,13 @@ to_ics_type(pybind11::dtype const& numpy_type) -> ::Ics_DataType
 auto
 read_numpy_array(Ics const& ics) -> pybind11::array
 {
-    auto [data_type, dimensions] = ics.layout();
+    auto const layout = ics.layout();
+    auto dimensions = std::vector<std::size_t>{};
+    std::ranges::copy(layout.dimensions(), std::back_inserter(dimensions));
     std::ranges::reverse(dimensions);
-    auto array = pybind11::array{ to_numpy_type(data_type), dimensions };
+
+    auto array =
+        pybind11::array{ to_numpy_type(layout.data_type()), dimensions };
 
     ics.read(std::span{
         static_cast<std::byte*>(array.mutable_data()),
@@ -103,7 +107,7 @@ write_numpy_array(Ics& ics, pybind11::array const& array)
         std::vector<std::size_t>(array.shape(), array.shape() + array.ndim());
     std::ranges::reverse(dimensions);
 
-    ics.set_layout(to_ics_type(array.dtype()), dimensions);
+    ics.set_layout(Layout{ to_ics_type(array.dtype()), dimensions });
     ics.write(std::span{
         static_cast<const std::byte*>(array.data()),
         static_cast<std::size_t>(array.nbytes()),
